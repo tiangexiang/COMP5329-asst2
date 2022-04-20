@@ -22,12 +22,12 @@ def predict(config):
     caption_model.load_state_dict(torch.load(os.path.join(config.model_save_path, config.exp_num, 'caption_model.pth')))
     caption_model.eval()
 
-    image_model = ImageModel(config.image.input_dim, config.image.hidden_dim, number_layers=1, dropout_rate=0, head='ml', bidirectional=True).to('cuda:0')
+    image_model = ImageModel(config.image.input_dim, config.image.hidden_dim, number_layers=1, dropout=0, head='ml', bidirectional=True).to('cuda:0')
     image_model.load_state_dict(torch.load(os.path.join(config.model_save_path, config.exp_num, 'image_model.pth')))
     image_model.eval()
 
-    det_model = ImageModel(config.detection.input_dim, config.detection.hidden_dim, number_layers=1, dropout_rate=0, head='lstm', bidirectional=True).to('cuda:0')
-    det_model.load_state_dict(torch.load(os.path.join(config.model_save_path, config.exp_num, 'detection_model.pth')))
+    det_model = ImageModel(config.detection.input_dim, config.detection.hidden_dim, number_layers=1, dropout=0, head='lstm', bidirectional=True).to('cuda:0')
+    det_model.load_state_dict(torch.load(os.path.join(config.model_save_path, config.exp_num, 'detection_model.pth')), strict=False)
     det_model.eval()
 
     combine_model = CombineModel(config.combine.input_dim, dropout=config.combine.dropout).to('cuda:0')
@@ -55,13 +55,15 @@ def predict(config):
     for batch_id, data in enumerate(tqdm(test_loader)):
         labels = data['labels']
         imgs = data['img_features']
+        dets = data['det_features']
         caps = data['caps']
         imgids = data['img_ids']
         img_ids += imgids
 
         with torch.no_grad():
-            _, img_features = image_model(imgs[0].to('cuda:0'))
-            _, det_features = det_model(imgs[1].to('cuda:0'))
+            _, img_features = image_model(imgs.to('cuda:0'))
+            #_, det_features = det_model(dets.to('cuda:0'))
+            det_features = None
             _, cap_features = caption_model(caps)
             predictions, output = combine_model(img_features, det_features, cap_features)
         
@@ -78,7 +80,6 @@ def predict(config):
                 if preds[n][i-1]>0.5:
                     pred.append(str(i))
             writer.writerow([img_ids[n], ' '.join(pred)])
-
 
 if __name__ == '__main__':
     config = parse_configs()

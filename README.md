@@ -32,7 +32,7 @@ please ```cd src``` first.
 4. train image model  
 ```python3 train_image_model.py --config 3```
 
-5. train detection model  
+5. train detection model (deprecated)
 ```python3 train_detection_model.py --config 3```
 
 6. train combine model  

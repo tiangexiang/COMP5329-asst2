@@ -24,12 +24,12 @@ def train_combine_model(Combine_model, optimizer, criterion, config):
     caption_model.load_state_dict(torch.load(os.path.join(config.model_save_path, config.exp_num, 'caption_model.pth')))
     caption_model.eval()
 
-    image_model = ImageModel(config.image.input_dim, config.image.hidden_dim, number_layers=1, dropout_rate=0, head='ml', bidirectional=True).to('cuda:0')
+    image_model = ImageModel(config.image.input_dim, config.image.hidden_dim, number_layers=1, dropout=0, head='ml', bidirectional=True).to('cuda:0')
     image_model.load_state_dict(torch.load(os.path.join(config.model_save_path, config.exp_num, 'image_model.pth')))
     image_model.eval()
 
-    det_model = ImageModel(config.detection.input_dim, config.detection.hidden_dim, number_layers=1, dropout_rate=0, head='lstm', bidirectional=True).to('cuda:0')
-    det_model.load_state_dict(torch.load(os.path.join(config.model_save_path, config.exp_num, 'detection_model.pth')))
+    det_model = ImageModel(config.detection.input_dim, config.detection.hidden_dim, number_layers=1, dropout=0, head='lstm', bidirectional=True).to('cuda:0')
+    det_model.load_state_dict(torch.load(os.path.join(config.model_save_path, config.exp_num, 'detection_model.pth')), strict=False)
     det_model.eval()
 
 
@@ -80,7 +80,8 @@ def train_combine_model(Combine_model, optimizer, criterion, config):
 
             with torch.no_grad():
                _, img_features = image_model(imgs.to('cuda:0'))
-               _, det_features = det_model(dets.to('cuda:0'))
+               #_, det_features = det_model(dets.to('cuda:0'))
+               det_features = None
                _, cap_features = caption_model(caps)
 
             predictions, output = Combine_model(img_features, det_features, cap_features)
@@ -106,7 +107,8 @@ def train_combine_model(Combine_model, optimizer, criterion, config):
 
             with torch.no_grad():
                _, img_features = image_model(imgs.to('cuda:0'))
-               _, det_features = det_model(dets.to('cuda:0'))
+               #_, det_features = det_model(dets.to('cuda:0'))
+               det_features = None
                _, cap_features = caption_model(caps)
 
             #print(det_features.shape, cap_features.shape)
@@ -155,7 +157,8 @@ def train_combine_model(Combine_model, optimizer, criterion, config):
 
         with torch.no_grad():
             _, img_features = image_model(imgs.to('cuda:0'))
-            _, det_features = det_model(dets.to('cuda:0'))
+            #_, det_features = det_model(dets.to('cuda:0'))
+            det_features = None
             _, cap_features = caption_model(caps)
 
         predictions, output = Combine_model(img_features, det_features, cap_features)
@@ -171,7 +174,7 @@ def train_combine_model(Combine_model, optimizer, criterion, config):
     print("Val: micro f1: %.4f, macro f1: %.4f, weighted f1: %.4f, samples f1: %.4f" % (val_micro_f1, val_macro_f1, val_weighted_f1, val_samples_f1))
     return train_loss_log, train_micro_f1_log, train_macro_f1_log, train_weighted_f1_log, train_samples_f1_log, val_loss_log, val_micro_f1_log, val_macro_f1_log, val_weighted_f1_log, val_samples_f1_log
 if __name__ == '__main__':
-
+    config = parse_configs()
     # Train an image model
     # import torch.optim as optim
     # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
