@@ -8,6 +8,7 @@ import os
 from torch.utils.data import DataLoader, Subset
 from tqdm import tqdm
 import torch.optim as optim
+from asl import AsymmetricLossOptimized
 
 
 def train_caption_model(Caption_model, optimizer, criterion, config):
@@ -121,29 +122,11 @@ def train_caption_model(Caption_model, optimizer, criterion, config):
 if __name__ == '__main__':
     
     # Train a caption model
-    config = parse_configs()
+    args, config = parse_configs()
     
-    # print(device)
-    # embedding_dim = 150
-    # hidden_dim = 128
-    # learning_rate = 1e-3
-    # weight_decay = 0
-    # batch_size = 256
-    # total_epoch = 10
-    # exp_num = '2'
-    # model_save_path = '/media/administrator/1305D8BDB8D46DEE/5329/ckpt'
-
-    Caption_model = Caption(config.caption.embedding_dim, config.caption.hidden_dim).to(config.device)
+    Caption_model = Caption(config.caption.input_dim, config.caption.hidden_dim, body=config.caption.body, sigmoid=True).to(config.device)
     criterion = nn.BCELoss()
+    #criterion = AsymmetricLossOptimized()
+    
     optimizer = optim.Adam(Caption_model.parameters(), lr=config.caption.learning_rate, weight_decay=config.caption.weight_decay)
     train_loss_log, train_micro_f1_log, train_macro_f1_log, train_weighted_f1_log, train_samples_f1_log, val_loss_log, val_micro_f1_log, val_macro_f1_log, val_weighted_f1_log, val_samples_f1_log = train_caption_model(Caption_model, optimizer, criterion, config)
-
-    # # save model
-    # if not os.path.exists(os.path.join(config.model_save_path, config.exp_num)):
-    #     os.mkdir(os.path.join(config.model_save_path, config.exp_num))
-
-    # torch.save(Caption_model.state_dict(), os.path.join(config.model_save_path, config.exp_num, 'caption_model.pth'))
-    # print('Caption model saved in '+os.path.join(config.model_save_path, config.exp_num, 'caption_model.pth'))
-
-    
-    
