@@ -8,15 +8,13 @@ import os
 from torch.utils.data import DataLoader, Subset
 from tqdm import tqdm
 import torch.optim as optim
-from asl import AsymmetricLossOptimized
 
 
 def train_caption_model(Caption_model, optimizer, criterion, config):
     print('\n=========== Data Preparation ===========')
-    #train_dataset = #MultiLabelDataset(data_path, train_df, train_input_embs, caption_only=True)
-    train_dataset = MultiLabelDataset(img_root=None,#'/media/administrator/1305D8BDB8D46DEE/5329/multi-label-classification-competition-22/COMP5329S1A2Dataset/data', 
-                                      label_root=config.label_root,#'/media/administrator/1305D8BDB8D46DEE/5329/',
-                                      cap_root=config.cap_root,#'/media/administrator/1305D8BDB8D46DEE/5329/cap_embedding/'
+    train_dataset = MultiLabelDataset(img_root=None,
+                                      label_root=config.label_root,
+                                      cap_root=config.cap_root,
                                      )
     train_size = int(len(train_dataset) * config.trainset_split)
     val_size = len(train_dataset) - train_size
@@ -53,7 +51,7 @@ def train_caption_model(Caption_model, optimizer, criterion, config):
             optimizer.zero_grad()
             predictions, output = Caption_model(captions)
             labels = labels.to(config.device)
-            loss = criterion(output, labels)
+            loss = criterion(output.float(), labels)
             loss.backward()
             optimizer.step()
             epoch_loss += loss.item()*len(captions)
@@ -92,13 +90,14 @@ def train_caption_model(Caption_model, optimizer, criterion, config):
         val_samples_f1_log.append(val_samples_f1)
         if val_loss < best_val_loss:
             best_val_loss = val_loss
+            Caption_model.half()
             torch.save(Caption_model.state_dict(), os.path.join(config.model_save_path, config.exp_num, 'caption_model.pth'))
-            #best_model = #torch.save(Caption_model, 'best_model.pt')
+            Caption_model.float()
 
     # Val
     Caption_model.load_state_dict(torch.load(os.path.join(config.model_save_path, config.exp_num, 'caption_model.pth')))
     print('\n=========== Validation ===========')
-    Caption_model.eval()
+    Caption_model.float().eval()
     val_loss = 0
     val_preds = []
     val_labels = []
@@ -125,8 +124,8 @@ if __name__ == '__main__':
     args, config = parse_configs()
     
     Caption_model = Caption(config.caption.input_dim, config.caption.hidden_dim, body=config.caption.body, sigmoid=True).to(config.device)
+    Caption_model = Caption_model#.half()
     criterion = nn.BCELoss()
-    #criterion = AsymmetricLossOptimized()
-    
+
     optimizer = optim.Adam(Caption_model.parameters(), lr=config.caption.learning_rate, weight_decay=config.caption.weight_decay)
     train_loss_log, train_micro_f1_log, train_macro_f1_log, train_weighted_f1_log, train_samples_f1_log, val_loss_log, val_micro_f1_log, val_macro_f1_log, val_weighted_f1_log, val_samples_f1_log = train_caption_model(Caption_model, optimizer, criterion, config)

@@ -100,7 +100,7 @@ class GroupFC(object):
 
 class MLDecoder(nn.Module):
     def __init__(self, num_classes, num_of_groups=-1, decoder_embedding=768,
-                 initial_num_features=2048, dim_feedforward=2048, zsl=0):
+                 initial_num_features=2048, zsl=0):
         super(MLDecoder, self).__init__()
         embed_len_decoder = 100 if num_of_groups < 0 else num_of_groups
         if embed_len_decoder > num_classes:
@@ -120,7 +120,7 @@ class MLDecoder(nn.Module):
         # decoder
         decoder_dropout = 0.1
         num_layers_decoder = 1
-        #dim_feedforward = 2048
+        dim_feedforward = 2048
         layer_decode = TransformerDecoderLayerOptimal(d_model=decoder_embedding,
                                                       dim_feedforward=dim_feedforward, dropout=decoder_dropout)
         self.decoder = nn.TransformerDecoder(layer_decode, num_layers=num_layers_decoder)

@@ -3,11 +3,14 @@ from dataset import MultiLabelDataset, my_collate
 import torch.nn as nn
 from combine_model import CombineModel
 from image_model import ImageModel
+from linear_model import LinearModel
 from caption_model import Caption
 import torch
 import os
 from torch.utils.data import DataLoader, Subset
 from tqdm import tqdm
+from copy import deepcopy
+import numpy as np
 import torch.nn.functional as F
 from asl import AsymmetricLossOptimized
 from tqdm import tqdm
@@ -16,32 +19,24 @@ from myutils import evaluate, parse_configs
 
 header = ['ImageID', 'Labels']
 
-def predict(config):
+def predict(config, args):
 
     caption_model = Caption(config.caption.input_dim, config.caption.hidden_dim).to('cuda:0')
     caption_model.load_state_dict(torch.load(os.path.join(config.model_save_path, config.exp_num, 'caption_model.pth')))
     caption_model.eval()
 
-    image_model = ImageModel(config.image.input_dim, config.image.hidden_dim, number_layers=1, dropout=0, head='ml', bidirectional=True).to('cuda:0')
-    image_model.load_state_dict(torch.load(os.path.join(config.model_save_path, config.exp_num, 'image_model.pth')))
-    image_model.eval()
-
-    det_model = ImageModel(config.detection.input_dim, config.detection.hidden_dim, number_layers=1, dropout=0, head='lstm', bidirectional=True).to('cuda:0')
-    det_model.load_state_dict(torch.load(os.path.join(config.model_save_path, config.exp_num, 'detection_model.pth')), strict=False)
-    det_model.eval()
-
-    combine_model = CombineModel(config.combine.input_dim, dropout=config.combine.dropout).to('cuda:0')
+    combine_model = CombineModel(config.combine.input_dim, dropout=config.combine.dropout).to(config.device)
     combine_model.load_state_dict(torch.load(os.path.join(config.model_save_path, config.exp_num, 'combine_model.pth')))
     combine_model.eval()
 
 
     print('\n=========== Data Preparation ===========')
-    test_dataset = MultiLabelDataset(img_root=None,#'/media/administrator/1305D8BDB8D46DEE/5329/multi-label-classification-competition-22/COMP5329S1A2Dataset/data', 
-                                label_root=config.label_root,#'/media/administrator/1305D8BDB8D46DEE/5329/',
-                                cap_root=config.test_cap_root,#'/media/administrator/1305D8BDB8D46DEE/5329/cap_embedding/',
-                                img_feature_root=config.test_img_feature_root,#['/media/administrator/1305D8BDB8D46DEE/5329/features/yolov5_test_img_feature3.npy', '/media/administrator/1305D8BDB8D46DEE/5329/features/yolov5_test_det_feature.npy'],
-                                det_feature_root=config.test_det_feature_root,#None,#'/media/administrator/1305D8BDB8D46DEE/5329/features/train_cap_features.npy'
-                                phase='test'
+
+    test_dataset = MultiLabelDataset(img_root=None,
+                                label_root=config.label_root,
+                                cap_root=config.test_cap_root,
+                                img_feature_root=config.test_img_feature_root,
+                                phase='test',    
                                 )
 
     test_loader = DataLoader(test_dataset,
@@ -51,23 +46,29 @@ def predict(config):
 
     print('\n=========== Predict ===========')
     preds = []
+    outputs = []
     img_ids = []
     for batch_id, data in enumerate(tqdm(test_loader)):
+        feat = data['img_features'].cuda()
+       
         labels = data['labels']
-        imgs = data['img_features']
-        dets = data['det_features']
         caps = data['caps']
         imgids = data['img_ids']
         img_ids += imgids
 
         with torch.no_grad():
-            _, img_features = image_model(imgs.to('cuda:0'))
-            #_, det_features = det_model(dets.to('cuda:0'))
-            det_features = None
             _, cap_features = caption_model(caps)
-            predictions, output = combine_model(img_features, det_features, cap_features)
-        
+            predictions, output = combine_model([feat, cap_features])
+
+        outputs += output.tolist()
         preds += predictions.tolist()
+
+    # load threshold
+    if os.path.exists('threshold.npy'):
+        threshold = np.load('threshold.npy')
+        print('Best threshold loaded!')
+    else:
+        threshold = [0.5 for _ in range(19)]
 
     # write csv
     with open(os.path.join(config.prediction_save_path, config.exp_num+'.csv'), 'w') as f:
@@ -76,13 +77,19 @@ def predict(config):
 
         for n in tqdm(range(len(img_ids))):
             pred = []
+            #logits.append(outputs[n])
             for i in range(1, 20):
-                if preds[n][i-1]>0.5:
+                if i == 12:
+                    continue
+                if outputs[n][i-1]>threshold[i-1]:
                     pred.append(str(i))
+            if len(pred) == 0:
+                cur = deepcopy(outputs[n])
+                idx = np.argsort(np.delete(cur, 11, 0))
+                pred = [str(idx[-1]+1)]
             writer.writerow([img_ids[n], ' '.join(pred)])
-
 if __name__ == '__main__':
-    config = parse_configs()
-    predict(config)
+    args, config = parse_configs()
+    predict(config, args)
     
     

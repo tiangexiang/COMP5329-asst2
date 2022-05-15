@@ -1,3 +1,4 @@
+from cProfile import label
 from unittest import result
 import torch
 import torchvision
@@ -41,7 +42,6 @@ def my_collate(data):
 
     # img
     if data[0]['img'] is not None:
-        #imgs = torch.stack([x['img'] for x in data], dim=0)
         imgs = [x['img'] for x in data]
         imgs = preprocess_img(imgs)
     else:
@@ -53,18 +53,11 @@ def my_collate(data):
     else:
         cap_embs = None
 
-    # img features
-    # if data[0]['img_feature'] is not None:
-    #     img_features = []
-    #     for feature_num in range(len(data[0]['img_feature'])):
-    #         img_features.append(torch.stack([x['img_feature'][feature_num] for x in data], dim=0))
-    #     if len(img_features) == 1:
-    #         img_features = img_features[0]
-    # else:
-    #     img_features = None
-
     if data[0]['img_feature'] is not None:
-        img_features = torch.stack([x['img_feature'] for x in data], dim=0)
+        if len(data[0]['img_feature'].shape) < 4:
+            img_features = torch.stack([x['img_feature'] for x in data], dim=0)
+        else:
+            img_features = torch.cat([x['img_feature'] for x in data], dim=0)
     else:
         img_features = None
 
@@ -73,30 +66,35 @@ def my_collate(data):
 
 class MultiLabelDataset(Dataset):
     def __init__(self, img_root=None, label_root=None, cap_root=None, 
-                 img_feature_root=None, img_feature_level=None, phase='train'):
+                 img_feature_root=None, img_feature_level=None, 
+                 phase='train', fp16=False, teacher_logits_root=None,
+                 teacher_label_root=None, label_blending_factor=0.):
         self.img_root = img_root
         self.label_root = label_root
         self.cap_root = cap_root
         self.phase = phase
         self.img_feature_root = img_feature_root
         self.img_feature_level = img_feature_level
+        self.teacher_logits_root = teacher_logits_root
+        self.teacher_label_root = teacher_label_root
+        self.img_feature = None
+        self.raw_labels = None
 
-        # self.img_feature = []
-        # if img_feature_root is not None:
-        #     if type(img_feature_root) is str:
-        #         img_feature_root = [img_feature_root]
-        #     for f in img_feature_root:
-        #         assert os.path.isfile(f) and f.endswith('.npy')
-        #         data = np.load(f)
-        #         self.img_feature.append(data) # N, 1024
-
-        if img_feature_root is not None:
+        # root
+        #   | level1
+        #       | imgid.npy
+        if img_feature_root is not None and img_feature_root[-4:] == '.npy':
             if img_feature_level is None:
                 assert os.path.isfile(img_feature_root) and img_feature_root.endswith('.npy')
             else:
-                img_feature_root = img_feature_root[:-4]+'_'+str(img_feature_level)+'_feature.npy'
+                if fp16:
+                    img_feature_root = img_feature_root[:-4]+'_'+str(img_feature_level)+'_feature_fp16.npy'
+                else:
+                    img_feature_root = img_feature_root[:-4]+'_'+str(img_feature_level)+'_feature.npy'
 
             self.img_feature = np.load(img_feature_root) # N, 1024
+        elif img_feature_root is not None and os.path.isdir(img_feature_root):
+            self.img_feature = os.path.join(self.img_feature_root, self.img_feature_level)
 
         # load label
         self.df = pd.read_csv(os.path.join(label_root, str(phase)+'.csv'))
@@ -116,18 +114,12 @@ class MultiLabelDataset(Dataset):
         # image transforms
         if phase == 'train':
             self.transforms = transforms.Compose([
-                                    #transforms.Resize((image_size, image_size)),
-                                    #torchvision.transforms.AutoAugment(torchvision.transforms.AutoAugmentPolicy.IMAGENET),
                                     transforms.ToTensor(),
-                                    #transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
                                 ])
         else:
             self.transforms = transforms.Compose([
-                                    #transforms.Resize((image_size, image_size)),
                                     transforms.ToTensor(),
-                                    #transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
                                 ])
-
 
     def load_label(self, df):
         labels = df["Labels"].apply(lambda x: [int(x) for x in x.split()])
@@ -136,8 +128,6 @@ class MultiLabelDataset(Dataset):
         
     
     def load_caption_feature(self, cap_root):
-        #caption_emb_file = os.path.join(cap_root, phase+'_caption_emb.txt')
-
         with open(cap_root, 'rb') as text:
             cap_embs = pickle.load(text)
 
@@ -161,18 +151,19 @@ class MultiLabelDataset(Dataset):
 
         results['label'] = self.labels[index] if self.labels is not None else torch.zeros(19,) -1 # -1 means no label given
 
-        if self.img_feature_root is not None:
-            results['img_feature'] = torch.FloatTensor(self.img_feature[index])
-        else:
+        if self.img_feature is None:
             results['img_feature'] = None
+        elif type(self.img_feature) is str:
+            results['img_feature'] = torch.FloatTensor(np.load(os.path.join(self.img_feature, self.phase, self.img_ids[index][:-4]+'.npy')))
+        elif type(self.img_feature) is np.ndarray:
+            results['img_feature'] = torch.FloatTensor(self.img_feature[index])
 
         if self.img_root is not None:
             img = Image.open(os.path.join(self.img_root, self.img_ids[index]))
-            results['img'] = img#self.transforms(img)
+            results['img'] = img
         else:
             results['img'] = None
-            #results['img_feature'] = None
-
+            
         if self.cap_root is not None:
             results['cap'] = self.cap_embs[index]
         else:

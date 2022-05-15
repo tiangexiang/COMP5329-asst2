@@ -8,15 +8,25 @@ class CombineModel(nn.Module):
     def __init__(self, input_dim, hidden_dim=36, num_class=19, bidirectional=True, dropout=0):
         super(CombineModel, self).__init__()
         self.num_class = num_class
-        self.lstm = nn.LSTM(input_dim, hidden_dim, num_layers=1, bidirectional=bidirectional, dropout=0)
-        self.output = nn.Sequential(nn.Dropout(dropout),
+        self.lstm = nn.LSTM(input_dim, hidden_dim, num_layers=2, bidirectional=bidirectional, dropout=dropout)
+        # self.output = nn.Sequential(nn.Dropout(dropout),
+        #                             nn.Linear(hidden_dim*num_class*2, num_class),
+        #                             nn.Sigmoid(),  
+        #                             )
+        self.output = nn.Sequential(#nn.Dropout(dropout),
                                     nn.Linear(hidden_dim*num_class*2, num_class),
+                                    # nn.LeakyReLU(0.1),
+                                    # nn.Dropout(dropout),
+                                    #nn.Linear(hidden_dim, num_class),
                                     nn.Sigmoid(),  
                                     )
 
+
     def forward(self, features):
 
-        image_features = torch.cat(features, 1)
+        image_features = torch.cat(features, 1).detach()
+        #input_features = image_features
+        #print(image_features.shape)
         # if det_features is not None:
         #     image_features = torch.cat((image_features, det_features, cap_features), 1)
         # else:
@@ -31,6 +41,7 @@ class CombineModel(nn.Module):
         output = output.reshape(output.shape[0], -1)
 
         output = self.output(output)
+        # output = self.output(output)
         predictions = output > 0.5
         return predictions, output
 
