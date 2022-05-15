@@ -17,20 +17,37 @@ Create a new configure file in ```./src/configs/```. All configure files inheren
 
 Please change ```exp_num``` and data path accordingly.
 
-### Pipeline
-please ```cd src``` first.
+### Pre processing
+1. Generate caption embeddings:
+```cd src```
+```python3 get_caption_embedding.py --config EXP```
 
-1. generate caption embeddings (skip this if you download the embeding file already)  
-```python3 get_caption_embedding.py --config 4```
+2. Generate image features:
+```cd ..```
+```cd ML_Decoder```
+```python3 infer_ours.py --phase train``` for train features (w/o denoise)
+```python3 infer_ours.py --phase train --denoise``` for train features (w denoise)
+```python3 infer_ours.py --phase test``` for test features (w/o denoise)
+```python3 infer_ours.py --phase test --denoise``` for test features (w denoise)
+```cd ..```
 
-2. train caption model 
-```python3 train_caption_model.py --config 4```
 
-3. train image model (specifiy which feature level in YOLOv5 shoud be used)
-```python3 train_image_model.py --config 4 --level 4```
+### Training Pipeline
+0. ```cd src```
 
-5. train combine model  
-```python3 train_combine_model.py --config 4```
+1. train caption model 
+```python3 train_caption_model.py --config EXP```
 
-6. predict on test set  
-```python3 predict.py --config 4```
+2. train combine model  
+```python3 train_combine_model.py --config EXP```
+
+### Inference pipeline
+0. ```cd src``` and make sure model weights are in ```ckpt/EXP```.
+
+1. get best threshold
+```python3 find_threshold.py --config EXP```
+
+3. predict on test set  
+```python3 predict.py --config EXP```
+
+predicted csv file will be saved in ```predicts/```.
