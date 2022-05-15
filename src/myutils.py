@@ -2,6 +2,10 @@ import torch.nn as nn
 import torch
 import numpy as np
 import cv2
+def warn(*args, **kwargs):
+    pass
+import warnings
+warnings.warn = warn
 from sklearn.metrics import f1_score
 import argparse
 import importlib
@@ -11,8 +15,6 @@ def parse_configs():
     parser = argparse.ArgumentParser(description='5329')
     parser.add_argument('--config', type=str, default='base',
                         help='Name of the config file')
-    parser.add_argument('--level', type=int, default=4,
-                        help='which img feature level?')
     args = parser.parse_args()
     config = importlib.import_module('configs.'+args.config).Config()
     return args, config
@@ -23,7 +25,10 @@ def evaluate(predictions, labels):
     micro_f1 = f1_score(labels, predictions, average='micro')
     macro_f1 = f1_score(labels, predictions, average='macro')
     weighted_f1 = f1_score(labels, predictions, average='weighted')
-    samples_f1 = f1_score(labels, predictions, average='samples')
+    if type(predictions) is list or len(predictions.shape) != 1:
+        samples_f1 = f1_score(labels, predictions, average='samples')
+    else:
+        samples_f1 = 0.
     return micro_f1, macro_f1, weighted_f1, samples_f1
 
 def exif_transpose(image):
