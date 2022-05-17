@@ -73,7 +73,7 @@ def train_combine_model(Combine_model, optimizer, criterion, config, args):
             loss = criterion(output, labels)
             # flooding
             # tune this parameter
-            loss = (loss-config.floodind).abs() + config.floodind
+            loss = (loss-config.combine.flooding).abs() + config.combine.flooding
 
             loss.backward()
             optimizer.step()
