@@ -2,7 +2,6 @@ import torch.nn as nn
 import torch
 import torchvision.models as models
 import torch.nn.functional as F
-from ml_decoder import MLDecoder
 
 class CombineModel(nn.Module):
     def __init__(self, input_dim, hidden_dim=36, num_class=19, bidirectional=True, dropout=0):
