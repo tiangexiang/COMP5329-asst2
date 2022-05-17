@@ -28,7 +28,7 @@ from copy import deepcopy
 
 parser = argparse.ArgumentParser(description='PyTorch MS_COCO infer')
 parser.add_argument('--num-classes', default=80, type=int)
-parser.add_argument('--model-path', type=str, default='tresnet_xl_COCO_640_91_4.pth')
+parser.add_argument('--model-path', type=str)
 parser.add_argument('--pic-path', type=str, default='./pics/000000000885.jpg')
 parser.add_argument('--model-name', type=str, default='tresnet_l')
 parser.add_argument('--image-size', type=int, default=640)

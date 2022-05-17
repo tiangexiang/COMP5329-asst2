@@ -13,7 +13,7 @@ import math
 
 def parse_configs():
     parser = argparse.ArgumentParser(description='5329')
-    parser.add_argument('--config', type=str, default='base',
+    parser.add_argument('--config', type=str, default='best',
                         help='Name of the config file')
     args = parser.parse_args()
     config = importlib.import_module('configs.'+args.config).Config()

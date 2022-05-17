@@ -31,6 +31,10 @@ Please change ```exp_num``` and data path accordingly.
 ```python3 infer_ours.py --phase test --denoise``` for test features (w denoise)  
 ```cd ..```
 
+Alternatively, please download the feature files from our google drive ```features/```:  
+https://drive.google.com/drive/folders/1pwB8GahBKw0pWBgD5yIg6Yjn_PD1DEuC?usp=sharing  
+and copy the corresponding path into your configure file.
+
 
 ### Training Pipeline
 0. ```cd src```
@@ -42,7 +46,10 @@ Please change ```exp_num``` and data path accordingly.
 ```python3 train_combine_model.py --config EXP```
 
 ### Inference pipeline
-0. ```cd src``` and make sure model weights are in ```ckpt/EXP```.
+instead of training our model, you can directly download our pretrained model from ```best/```:  
+https://drive.google.com/drive/folders/1pwB8GahBKw0pWBgD5yIg6Yjn_PD1DEuC?usp=sharing
+
+0. ```cd src``` and make sure (trained/downloaded) model weights are in ```ckpt/EXP```.
 
 1. get best threshold  
 ```python3 find_threshold.py --config EXP```
