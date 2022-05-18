@@ -18,13 +18,13 @@ import torch.optim as optim
 
 def find_threshold(config, args):
 
-    caption_model = Caption(config.caption.input_dim, config.caption.hidden_dim).to('cuda:0')
+    caption_model = Caption(config.caption.input_dim, config.caption.hidden_dim, body=config.caption.body).to('cuda:0')
     caption_model.load_state_dict(torch.load(os.path.join(config.model_save_path, config.exp_num, 'caption_model.pth')))
     caption_model.eval()
 
-    Combine_model = CombineModel(config.combine.input_dim, dropout=config.combine.dropout).to(config.device)
+    Combine_model = CombineModel(config.combine.input_dim, config.combine.hidden_dim, dropout=config.combine.dropout).to(config.device)
     Combine_model.load_state_dict(torch.load(os.path.join(config.model_save_path, config.exp_num, 'combine_model.pth')))
-    Combine_model.eval()
+    Combine_model.eval().float()
 
     criterion = nn.BCELoss()
 
@@ -36,7 +36,7 @@ def find_threshold(config, args):
                                 )
 
     train_size = int(len(train_dataset) * config.trainset_split)
-    val_size = len(train_dataset) - train_size
+    val_size = len(train_dataset)# - train_size
 
     val_loader = DataLoader(train_dataset,
                             #Subset(train_dataset, range(train_size-val_size, train_size)),

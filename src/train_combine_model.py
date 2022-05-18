@@ -12,13 +12,13 @@ from tqdm import tqdm
 
 import torch.optim as optim
 
-# 7 0.0499
+# 8 0.0544
 
 save_last = False
 
 def train_combine_model(Combine_model, optimizer, criterion, config, args):
 
-    caption_model = Caption(config.caption.input_dim, config.caption.hidden_dim).to('cuda:0')
+    caption_model = Caption(config.caption.input_dim, config.caption.hidden_dim, body=config.caption.body).to('cuda:0')
     caption_model.load_state_dict(torch.load(os.path.join(config.model_save_path, config.exp_num, 'caption_model.pth')))
     caption_model.eval()
 
@@ -31,11 +31,19 @@ def train_combine_model(Combine_model, optimizer, criterion, config, args):
 
     train_size = int(len(train_dataset) * config.trainset_split)
     val_size = len(train_dataset) - train_size
-    train_loader = DataLoader(Subset(train_dataset, list(range(0, train_size-val_size))+list(range(train_size, len(train_dataset)))),
+    # train_loader = DataLoader(Subset(train_dataset, list(range(0, train_size-val_size))+list(range(train_size, len(train_dataset)))),
+    #                     batch_size = config.combine.batch_size,
+    #                     shuffle = True,
+    #                     collate_fn = my_collate)
+    # val_loader = DataLoader(Subset(train_dataset, range(train_size-val_size, train_size)),
+    #                         batch_size = config.combine.batch_size,
+    #                         shuffle=False,
+    #                         collate_fn = my_collate)
+    train_loader = DataLoader(Subset(train_dataset, list(range(0, train_size))),
                         batch_size = config.combine.batch_size,
                         shuffle = True,
                         collate_fn = my_collate)
-    val_loader = DataLoader(Subset(train_dataset, range(train_size-val_size, train_size)),
+    val_loader = DataLoader(Subset(train_dataset, range(train_size, len(train_dataset))),
                             batch_size = config.combine.batch_size,
                             shuffle=False,
                             collate_fn = my_collate)
@@ -54,6 +62,7 @@ def train_combine_model(Combine_model, optimizer, criterion, config, args):
     print('\n=========== Training ===========')
     best_val_loss = 100
     for epoch in range(config.combine.total_epoch):
+        Combine_model.float()
         Combine_model.train()
         epoch_loss = 0
         # Train
@@ -69,6 +78,8 @@ def train_combine_model(Combine_model, optimizer, criterion, config, args):
                 _, cap_features = caption_model(caps)
 
             predictions, output = Combine_model([feat, cap_features])
+
+            #predictions, output = Combine_model(feat, caps)
             labels = labels.to(config.device)
             loss = criterion(output, labels)
             # flooding
@@ -95,6 +106,8 @@ def train_combine_model(Combine_model, optimizer, criterion, config, args):
                 _, cap_features = caption_model(caps)
 
             predictions, output = Combine_model([feat, cap_features])
+            #predictions, output = Combine_model(feat, caps)
+
             labels = labels.to(config.device)
             loss = criterion(output, labels)
             val_loss += loss.item()*data['labels'].shape[0]
@@ -121,13 +134,14 @@ def train_combine_model(Combine_model, optimizer, criterion, config, args):
         val_samples_f1_log.append(val_samples_f1)
         if val_loss < best_val_loss:
             best_val_loss = val_loss
-            torch.save(Combine_model.state_dict(), os.path.join(config.model_save_path, config.exp_num, 'combine_model.pth'))
+            torch.save(Combine_model.half().state_dict(), os.path.join(config.model_save_path, config.exp_num, 'combine_model.pth'))
         if save_last:
             torch.save(Combine_model.state_dict(), os.path.join(config.model_save_path, config.exp_num, 'combine_model_last.pth'))
     # Val
+    Combine_model = Combine_model.half()
     Combine_model.load_state_dict(torch.load(os.path.join(config.model_save_path, config.exp_num, 'combine_model.pth')))
     print('\n=========== Validation ===========')
-    Combine_model.eval()
+    Combine_model.float().eval()
     val_loss = 0
     val_preds = []
     val_labels = []
@@ -141,6 +155,7 @@ def train_combine_model(Combine_model, optimizer, criterion, config, args):
             _, cap_features = caption_model(caps)
 
         predictions, output = Combine_model([feat, cap_features])
+        #predictions, output = Combine_model(feat, caps)
         labels = labels.to(config.device)
         loss = criterion(output, labels)
         val_loss += loss.item()*data['labels'].shape[0]
@@ -156,7 +171,7 @@ def train_combine_model(Combine_model, optimizer, criterion, config, args):
 if __name__ == '__main__':
     args, config = parse_configs()
 
-    Combine_model = CombineModel(config.combine.input_dim, dropout=config.combine.dropout).to(config.device)
+    Combine_model = CombineModel(config.combine.input_dim, config.combine.hidden_dim, dropout=config.combine.dropout).to(config.device)
     criterion = nn.BCELoss()
 
     optimizer = optim.Adam(Combine_model.parameters(), lr=config.combine.learning_rate, weight_decay=config.combine.weight_decay)

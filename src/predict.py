@@ -21,11 +21,11 @@ header = ['ImageID', 'Labels']
 
 def predict(config, args):
 
-    caption_model = Caption(config.caption.input_dim, config.caption.hidden_dim).to('cuda:0')
+    caption_model = Caption(config.caption.input_dim, config.caption.hidden_dim, body=config.caption.body).to('cuda:0')
     caption_model.load_state_dict(torch.load(os.path.join(config.model_save_path, config.exp_num, 'caption_model.pth')))
     caption_model.eval()
 
-    combine_model = CombineModel(config.combine.input_dim, dropout=config.combine.dropout).to(config.device)
+    combine_model = CombineModel(config.combine.input_dim, config.combine.hidden_dim, dropout=config.combine.dropout).to(config.device)
     combine_model.load_state_dict(torch.load(os.path.join(config.model_save_path, config.exp_num, 'combine_model.pth')))
     combine_model.eval()
 

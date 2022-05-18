@@ -42,6 +42,7 @@ class Config(BaseConfig):
         self.combine.learning_rate = 1e-3
         self.combine.weight_decay = 0
         self.combine.batch_size = 32
+        self.combine.hidden_dim = 100
         self.combine.total_epoch = 50
         self.combine.dropout=0.2
         self.combine.flooding=0.035 # https://arxiv.org/abs/2002.08709
