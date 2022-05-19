@@ -7,7 +7,7 @@ class CombineModel(nn.Module):
     def __init__(self, input_dim, hidden_dim=36, num_class=19, bidirectional=True, dropout=0):
         super(CombineModel, self).__init__()
         self.num_class = num_class
-        self.lstm = nn.LSTM(input_dim, hidden_dim, num_layers=2, bidirectional=bidirectional, dropout=dropout)
+        self.lstm = nn.LSTM(input_dim, hidden_dim, num_layers=1, bidirectional=bidirectional, dropout=dropout)
         # self.output = nn.Sequential(nn.Dropout(dropout),
         #                             nn.Linear(hidden_dim*num_class*2, num_class),
         #                             nn.Sigmoid(),  

@@ -2,8 +2,6 @@
 from dataset import MultiLabelDataset, my_collate
 import torch.nn as nn
 from combine_model import CombineModel
-from image_model import ImageModel
-from linear_model import LinearModel
 from myutils import evaluate, parse_configs
 from caption_model import Caption
 import torch
@@ -11,8 +9,6 @@ import os
 from torch.utils.data import DataLoader, Subset
 from tqdm import tqdm
 import torch.nn.functional as F
-from asl import AsymmetricLossOptimized
-from tqdm import tqdm
 import numpy as np
 import torch.optim as optim
 

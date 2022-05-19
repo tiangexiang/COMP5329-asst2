@@ -8,7 +8,6 @@ import os
 from torch.utils.data import DataLoader, Subset
 from tqdm import tqdm
 import torch.nn.functional as F
-from tqdm import tqdm
 
 import torch.optim as optim
 
@@ -31,14 +30,6 @@ def train_combine_model(Combine_model, optimizer, criterion, config, args):
 
     train_size = int(len(train_dataset) * config.trainset_split)
     val_size = len(train_dataset) - train_size
-    # train_loader = DataLoader(Subset(train_dataset, list(range(0, train_size-val_size))+list(range(train_size, len(train_dataset)))),
-    #                     batch_size = config.combine.batch_size,
-    #                     shuffle = True,
-    #                     collate_fn = my_collate)
-    # val_loader = DataLoader(Subset(train_dataset, range(train_size-val_size, train_size)),
-    #                         batch_size = config.combine.batch_size,
-    #                         shuffle=False,
-    #                         collate_fn = my_collate)
     train_loader = DataLoader(Subset(train_dataset, list(range(0, train_size))),
                         batch_size = config.combine.batch_size,
                         shuffle = True,
