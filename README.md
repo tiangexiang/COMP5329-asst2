@@ -1,6 +1,6 @@
 # 5329 assignment2
 Tiange Xiang 470082274  
-Shunqi Mao  
+Shunqi Mao 470079780
 Xinyi Wang  
 
 ## Environment
@@ -13,9 +13,9 @@ conda activate 5329
 
 ## Instructions
 ### Config
-Create a new configure file in ```./src/configs/```. All configure files inherent from the ```base.py``` configure.
+Create a new configure file EXP in ```./src/configs/```. All configure files inherent from the ```base.py``` configure.
 
-Please change ```exp_num``` and data path accordingly.
+Please change ```exp_num``` (experiment name) and data path accordingly.
 
 ### Pre processing
 1. Generate caption embeddings:  
