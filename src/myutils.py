@@ -10,6 +10,16 @@ from sklearn.metrics import f1_score
 import argparse
 import importlib
 import math
+from PIL import Image
+
+def write_log(log_dir, log_list, metric, exp_name,):
+    # log_name = log_dir + '/' + exp_name + '.txt'
+    log_name = log_dir
+    textfile = open(log_name, "a")
+    textfile.write(metric + '\n')
+    textfile.write(str(log_list))
+    textfile.write('\n')
+    textfile.close()
 
 def parse_configs():
     parser = argparse.ArgumentParser(description='5329')
