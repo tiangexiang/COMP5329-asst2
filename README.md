@@ -1,7 +1,7 @@
 # 5329 assignment2
 Tiange Xiang 470082274  
 Shunqi Mao 470079780  
-Xinyi Wang  
+Xinyi Wang  470080203
 
 ## Environment
 Please clone our environment using the following command:
@@ -13,7 +13,7 @@ conda activate 5329
 
 ## Instructions
 ### Config
-Create a new configure file ```EXP.py``` in ```./src/configs/```. All configure files inherent from the ```base.py``` configure.
+Create a new configure file ```EXP.py``` in ```./src/configs/```. All configure files inherent from the ```base.py``` configure, or you could directly modify ```best.py``` for your usage.
 
 Please change ```exp_num``` (experiment name) and data path accordingly.
 
