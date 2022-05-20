@@ -1,7 +1,7 @@
 from dataset import MultiLabelDataset, my_collate
 import torch.nn as nn
 from combine_model import CombineModel
-from myutils import evaluate, parse_configs
+from myutils import evaluate, parse_configs, write_log
 from caption_model import Caption
 import torch
 import os
@@ -128,6 +128,17 @@ def train_combine_model(Combine_model, optimizer, criterion, config, args):
             torch.save(Combine_model.half().state_dict(), os.path.join(config.model_save_path, config.exp_num, 'combine_model.pth'))
         if save_last:
             torch.save(Combine_model.state_dict(), os.path.join(config.model_save_path, config.exp_num, 'combine_model_last.pth'))
+    
+        
+    log_name = os.path.join(config.model_save_path, config.exp_num, 'image_log.txt')
+    write_log(log_name, train_loss_log, 'train_loss', config.exp_num)
+    write_log(log_name, train_samples_f1_log, 'train_f1', config.exp_num)
+    write_log(log_name, val_loss_log, 'loss', config.exp_num)
+    write_log(log_name, val_micro_f1_log, 'val_micro_f1_log', config.exp_num)
+    write_log(log_name, val_macro_f1_log, 'val_macro_f1_log', config.exp_num)
+    write_log(log_name, val_weighted_f1_log, 'val_weighted_f1_log', config.exp_num)
+    write_log(log_name, val_samples_f1_log, 'val_samples_f1_log', config.exp_num)
+    
     # Val
     Combine_model = Combine_model.half()
     Combine_model.load_state_dict(torch.load(os.path.join(config.model_save_path, config.exp_num, 'combine_model.pth')))
@@ -157,6 +168,10 @@ def train_combine_model(Combine_model, optimizer, criterion, config, args):
     val_loss /= val_size
     print("val loss: %.4f" % (val_loss))
     print("Val: micro f1: %.4f, macro f1: %.4f, weighted f1: %.4f, samples f1: %.4f" % (val_micro_f1, val_macro_f1, val_weighted_f1, val_samples_f1))
+    textfile = open(log_name, "a")
+    textfile.write("val loss: %.4f" % (val_loss) + '\n')
+    textfile.write("Val: micro f1: %.4f, macro f1: %.4f, weighted f1: %.4f, samples f1: %.4f" % (val_micro_f1, val_macro_f1, val_weighted_f1, val_samples_f1) + '\n')
+    textfile.close()
     return train_loss_log, train_micro_f1_log, train_macro_f1_log, train_weighted_f1_log, train_samples_f1_log, val_loss_log, val_micro_f1_log, val_macro_f1_log, val_weighted_f1_log, val_samples_f1_log
 
 if __name__ == '__main__':
