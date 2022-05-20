@@ -68,6 +68,8 @@ def predict(config, args):
         threshold = [0.5 for _ in range(19)]
 
     # write csv
+    if not os.path.exists(config.prediction_save_path):
+        os.mkdir(config.prediction_save_path)
     with open(os.path.join(config.prediction_save_path, config.exp_num+'.csv'), 'w') as f:
         writer = csv.writer(f)
         writer.writerow(header)
