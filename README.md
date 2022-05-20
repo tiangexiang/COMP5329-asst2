@@ -13,7 +13,7 @@ conda activate 5329
 
 ## Instructions
 ### Config
-Create a new configure file ```EXP``` in ```./src/configs/```. All configure files inherent from the ```base.py``` configure.
+Create a new configure file ```EXP.py``` in ```./src/configs/```. All configure files inherent from the ```base.py``` configure.
 
 Please change ```exp_num``` (experiment name) and data path accordingly.
 
