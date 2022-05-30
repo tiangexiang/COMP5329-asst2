@@ -1,4 +1,4 @@
-# COMP5329 assignment2 - Compression Is All Your Need
+# COMP5329 assignment2 (Compression Is All Your Need)
 Tiange Xiang 470082274  
 Shunqi Mao 470079780  
 Xinyi Wang  470080203
